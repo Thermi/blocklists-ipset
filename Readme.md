@@ -25,6 +25,7 @@ create blocklists-de-temporary_v4 hash:ip family inet hashsize 1024 maxelem 6553
 
 create blocklists-de-temporary_v4 hash:ip family inet6 hashsize 1024 maxelem 65535
 
-Afterwards, the temporary sets are destroyed and the temporary files deleted.
+Afterwards, the temporary sets and the permanent sets are swapped.
+Then the temporary sets are destroyed and the temporary files deleted.
 
 Errors are written to stderr.
