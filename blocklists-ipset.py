@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
 import http.client
 import ipaddress
 import ssl
@@ -44,9 +45,13 @@ class blocklists_ipset:
     permanent_name_template = "blocklists-de-permanent"
 
     def get_list(self):
+        ctx = ssl.create_default_context()
+        ctx.options |= ssl.OP_NO_TLSv1
+        ctx.options |= ssl.OP_NO_TLSv1_1
+        ctx.options |= ssl.OP_NO_COMPRESSION
         # initiate a secure HTTPS connection to get the list
         connection = http.client.HTTPSConnection(self.blocklists_fqdn, 
-            context = ssl.create_default_context(), timeout=5)
+            context = ctx , timeout=5)
         try:
             connection.connect()
         except:
@@ -74,6 +79,8 @@ class blocklists_ipset:
         return True
 
     def process_blocklist(self):
+
+        number_of_ips = 0
         # set up IPv4 and IPv6 temporary files
         invalid_v4 = list() 
         for i in [
@@ -120,6 +127,7 @@ class blocklists_ipset:
                 temporary_file_v4.file.write(bytearray(
                     add_template.format(temporary_name_v4, i), 'utf-8')
                 )
+                number_of_ips += 1
             # else it's IPv6
             else:
                 # check if it's in a private subnet
@@ -129,6 +137,7 @@ class blocklists_ipset:
                 temporary_file_v6.file.write(bytearray(
                     add_template.format(temporary_name_v6, i), 'utf-8')
                 )
+                number_of_ips += 1
 
         temporary_file_v4.file.flush()
         temporary_file_v6.file.flush()
@@ -151,6 +160,9 @@ class blocklists_ipset:
         
         # destroy the old set
         self.destroy_set(temporary_name_v6)
+
+        if self.verbose:
+            print ("Loaded {} IPs into the sets".format(number_of_ips))
 
     def restore_file(self, filename):
         cmd = "ipset -exist -f {} restore".format(filename).split(" ")
@@ -201,6 +213,18 @@ class blocklists_ipset:
         return format_string.format(name, settype, family, hashsize, maxelem)
 
     def run(self):
+
+        parser = argparse.ArgumentParser(description="Updates ipsets with all.txt from blocklist.de.")
+        parser.add_argument('-v',
+                '--verbose',
+                action='store_true',
+                help="Enables verbose mode",
+                dest="verbose"
+            )
+
+        args = parser.parse_args()
+
+        self.verbose = args.verbose
 
         if not self.get_list():
             exit(1)
