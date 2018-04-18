@@ -227,7 +227,7 @@ class blocklists_ipset:
         self.verbose = args.verbose
 
         if not self.get_list():
-            exit(1)
+            sys.exit(1)
 
         self.process_blocklist()
 
