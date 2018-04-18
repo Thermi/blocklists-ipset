@@ -1,0 +1,8 @@
+[Unit]
+Description=Timer unit to update the ipsets with blocklists from blocklists.de
+
+[Timer]
+OnCalendar= *-*-* *:00:00
+
+[Install]
+WantedBy=multi-user.target
