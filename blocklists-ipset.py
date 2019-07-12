@@ -77,6 +77,59 @@ class BlocklistsIpset:
             format_string = "create {} {} family {} hashsize {} maxelem {}"
         return format_string.format(name, settype, family, hashsize, maxelem)
 
+    @classmethod
+    def restore_file(cls, filename):
+        """
+        Load the given filename using ipset restore.
+        """
+        cmd = "ipset -exist -f {} restore".format(filename).split(" ")
+
+        process = subprocess.Popen(cmd)
+        process.wait()
+
+        if process.returncode != 0:
+            print("Restoring the file {} failed with code {}".format(filename, process.returncode))
+            return False
+        return False
+
+    @classmethod
+    def derive_names(cls, name):
+        """
+        Generate the names for the IPsets for the IPv4 and IPv6 protocol families
+        """
+        ipv4_suffix = "_v4"
+        ipv6_suffix = "_v6"
+        return "{}{}".format(name, ipv4_suffix), "{}{}".format(name, ipv6_suffix)
+
+    @classmethod
+    def destroy_set(cls, set_1):
+        """
+        Destroy the given set referenced by its name (set_1 argument's value).
+        """
+        cmd = "ipset destroy {}".format(set_1).split(" ")
+
+        process = subprocess.Popen(cmd)
+        process.wait()
+        if process.returncode != 0:
+            print("Deleting the ipset {} failed with code {}".format(set_1, process.returncode))
+            return False
+        return True
+
+    @classmethod
+    def swap_sets(cls, set_1, set_2):
+        """
+        Swap the two given sets in the kernel.
+        """
+        cmd = "ipset swap {} {}".format(set_1, set_2).split(" ")
+
+        process = subprocess.Popen(cmd)
+        process.wait()
+        if process.returncode != 0:
+            eprint("Swapping the ipsets {} and {} failed with code {}".format(
+                set_1, set_2, process.returncode))
+            return False
+        return True
+
     def get_list(self):
         """
         Download the blocklist using HTTPS and TLSv1.2 or higher.
@@ -207,54 +260,6 @@ class BlocklistsIpset:
 
         if self.verbose:
             print("Loaded {} IPs into the sets".format(number_of_ips))
-
-    def restore_file(self, filename):
-        """
-        Load the given filename using ipset restore.
-        """
-        cmd = "ipset -exist -f {} restore".format(filename).split(" ")
-
-        process = subprocess.Popen(cmd)
-        process.wait()
-
-        if process.returncode != 0:
-            print("Restoring the file {} failed with code {}".format(filename, process.returncode))
-            return False
-        return False
-
-    def derive_names(self, name):
-        """
-        Generate the names for the IPsets for the IPv4 and IPv6 protocol families
-        """
-        v4 = "_v4"
-        v6 = "_v6"
-        return "{}{}".format(name, v4), "{}{}".format(name, v6)
-
-    def destroy_set(self, set_1):
-        """
-        Destroy the given set referenced by its name (set_1 argument's value).
-        """
-        cmd = "ipset destroy {}".format(set_1).split(" ")
-
-        process = subprocess.Popen(cmd)
-        process.wait()
-        if process.returncode != 0:
-            print("Deleting the ipset {} failed with code {}".format(set_1, process.returncode))
-            return False
-        return True
-
-    def swap_sets(self, set_1, set_2):
-        """
-        Swap the two given sets in the kernel.
-        """
-        cmd = "ipset swap {} {}".format(set_1, set_2).split(" ")
-
-        process = subprocess.Popen(cmd)
-        process.wait()
-        if process.returncode != 0:
-            eprint("Swapping the ipsets {} and {} failed with code {}".format(set_1, set_2, process.returncode))
-            return False
-        return True
 
     def run(self):
         """
