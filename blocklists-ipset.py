@@ -64,6 +64,19 @@ class BlocklistsIpset:
         temporary_file_handle.write(bytearray("{}\n".format(header), 'utf-8'))
         temporary_file_handle.flush()
 
+    @classmethod
+    def generate_file_header(cls, name, settype="hash:ip", comment=True, family="inet",
+                             hashsize=1024, maxelem=65535):
+        """
+        Generate the correct headers for the IPset files.
+        """
+        format_string = None
+        if comment:
+            format_string = "create {} {} family {} hashsize {} maxelem {} comment"
+        else:
+            format_string = "create {} {} family {} hashsize {} maxelem {}"
+        return format_string.format(name, settype, family, hashsize, maxelem)
+
     def get_list(self):
         """
         Download the blocklist using HTTPS and TLSv1.2 or higher.
@@ -241,18 +254,6 @@ class BlocklistsIpset:
             eprint("Swapping the ipsets {} and {} failed with code {}".format(set_1, set_2, process.returncode))
             return False
         return True
-
-    def generate_file_header(self, name, settype="hash:ip", comment=True, family="inet",
-                             hashsize=1024, maxelem=65535):
-        """
-        Generate the correct headers for the IPset files.
-        """
-        format_string = None
-        if comment:
-            format_string = "create {} {} family {} hashsize {} maxelem {} comment"
-        else:
-            format_string = "create {} {} family {} hashsize {} maxelem {}"
-        return format_string.format(name, settype, family, hashsize, maxelem)
 
     def run(self):
         """
