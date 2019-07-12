@@ -23,18 +23,29 @@ import sys
 import tempfile
 
 def eprint(*args, **kwargs):
+    """
+    Print to stderr
+    """
     print(*args, file=sys.stderr, **kwargs)
 
 class Network:
+    """
+    Container class for caching a subnet's network address and mask
+    """
     def __init__(self, subnet):
         network = ipaddress.ip_network(subnet)
         self.network = int(network.network_address)
         self.mask = int(network.netmask)
 
 class BlocklistsIpset:
-
+    """
+    Implements a downloader and updater for IPset based filtering
+    using the "all.txt" blocklist from blocklist.de
+    Uses ipset on cmdline and uses near atomic swapping of new and old sets.
+    Supports IPv4 and IPv6.
+    """
     def __init__(self):
-        self.blocklists_fqdn= "lists.blocklist.de"
+        self.blocklists_fqdn = "lists.blocklist.de"
         self.blocklists_file = "/lists/all.txt"
 
         self.blocklist_list = list()
@@ -46,11 +57,17 @@ class BlocklistsIpset:
         self.verbose = False
 
     @classmethod
-    def write_header(self, temporary_file_handle, header):
+    def write_header(cls, temporary_file_handle, header):
+        """
+        Write the right file header for ipset files (used using ipsec restore).
+        """
         temporary_file_handle.write(bytearray("{}\n".format(header), 'utf-8'))
         temporary_file_handle.flush()
 
     def get_list(self):
+        """
+        Download the blocklist using HTTPS and TLSv1.2 or higher.
+        """
         ctx = ssl.create_default_context()
         ctx.options |= ssl.OP_NO_TLSv1
         ctx.options |= ssl.OP_NO_TLSv1_1
@@ -88,7 +105,9 @@ class BlocklistsIpset:
         return True
 
     def process_blocklist(self):
-
+        """
+        Filter the downloaded blacklist for bogons, private, link-local and multicast addresses
+        """
         number_of_ips = 0
         # set up IPv4 and IPv6 temporary files
         invalid_v4 = list()
@@ -177,6 +196,9 @@ class BlocklistsIpset:
             print("Loaded {} IPs into the sets".format(number_of_ips))
 
     def restore_file(self, filename):
+        """
+        Load the given filename using ipset restore.
+        """
         cmd = "ipset -exist -f {} restore".format(filename).split(" ")
 
         process = subprocess.Popen(cmd)
@@ -187,11 +209,17 @@ class BlocklistsIpset:
             return False
 
     def derive_names(self, name):
+        """
+        Generate the names for the IPsets for the IPv4 and IPv6 protocol families
+        """
         v4 = "_v4"
         v6 = "_v6"
         return "{}{}".format(name, v4), "{}{}".format(name, v6)
 
     def destroy_set(self, set_1):
+        """
+        Destroy the given set referenced by its name (set_1 argument's value).
+        """
         cmd = "ipset destroy {}".format(set_1).split(" ")
 
         process = subprocess.Popen(cmd)
@@ -202,6 +230,9 @@ class BlocklistsIpset:
         return True
 
     def swap_sets(self, set_1, set_2):
+        """
+        Swap the two given sets in the kernel.
+        """
         cmd = "ipset swap {} {}".format(set_1, set_2).split(" ")
 
         process = subprocess.Popen(cmd)
@@ -213,7 +244,9 @@ class BlocklistsIpset:
 
     def generate_file_header(self, name, settype="hash:ip", comment=True, family="inet",
                              hashsize=1024, maxelem=65535):
-
+        """
+        Generate the correct headers for the IPset files.
+        """
         format_string = None
         if comment:
             format_string = "create {} {} family {} hashsize {} maxelem {} comment"
@@ -222,7 +255,9 @@ class BlocklistsIpset:
         return format_string.format(name, settype, family, hashsize, maxelem)
 
     def run(self):
-
+        """
+        Run the argument parser, download and apply the blocklist.
+        """
         parser = argparse.ArgumentParser(
             description="Updates ipsets with all.txt from blocklist.de.")
         parser.add_argument(
