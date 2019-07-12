@@ -25,9 +25,7 @@ import tempfile
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
-class network:
-    network = None
-    mask = None
+class Network:
     def __init__(self, subnet):
         network = ipaddress.ip_network(subnet)
         self.network = int(network.network_address)
@@ -91,14 +89,14 @@ class blocklists_ipset:
             "192.168.0.0/16", "169.254.0.0/16", "255.0.0.0/8",
             "224.0.0.0/4"
             ]:
-            invalid_v4.append(network(i))
+            invalid_v4.append(Network(i))
         
 
         invalid_v6 = list()
         for i in [
             "ff00::/8", "fe80::/10", "fd00::/8"
             ]:
-            invalid_v6.append(network(i))
+            invalid_v6.append(Network(i))
 
         temporary_file_v4 = tempfile.NamedTemporaryFile()
         temporary_file_v6 = tempfile.NamedTemporaryFile()
