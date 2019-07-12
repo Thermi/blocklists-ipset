@@ -16,6 +16,7 @@
 import argparse
 import http.client
 import ipaddress
+import socket
 import ssl
 import subprocess
 import sys
@@ -61,8 +62,10 @@ class blocklists_ipset:
             connection.request("GET", self.blocklists_file)
         except socket.error as e:
             eprint ("Socket error: {}".format(e))
+            return False
         except socket.timeout as timeout:
             eprint ("Socket error: Connection timed out.")
+            return False
 
         response = connection.getresponse()
 
