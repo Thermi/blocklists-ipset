@@ -220,6 +220,7 @@ class BlocklistsIpset:
         if process.returncode != 0:
             print("Restoring the file {} failed with code {}".format(filename, process.returncode))
             return False
+        return False
 
     def derive_names(self, name):
         """
