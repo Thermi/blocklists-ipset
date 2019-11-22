@@ -163,7 +163,7 @@ class BlocklistsIpset:
             return False
 
         body = response.read()
-        if body:
+        if not body:
             eprint("Server didn't send us any data.")
             return False
 
